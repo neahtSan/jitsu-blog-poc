@@ -1,76 +1,123 @@
-# Jitsu Blog Demo (React + Vite + TS + Docker)
-A tiny, zero-backend blog that writes posts to `localStorage` and emits Jitsu analytics events (page views, custom events, and optional identify). Built with Vite and shipped as a static SPA in Nginx.
+# Jitsu Blog POC  
+A simple full-stack blog demo that integrates **Jitsu Cloud analytics**.  
+Stack: React + Vite + TypeScript (frontend), ElysiaJS + Bun (backend), MongoDB (storage), Nginx (frontend proxy), Docker Compose (orchestration).
 
+---
 
-## Features
-- Create / view / delete posts (client-side storage)
-- Jitsu events: `PageViewed`, `BlogPostCreated`, `BlogPostViewed`, `BlogPostDeleted`, `AliasSet`
-- Optional `identify()` via the header alias box
-- One-container production image (Nginx) suitable for any Mac/PC/Linux host with Docker
+## ✨ Features
+- Create / view / delete blog posts (stored in MongoDB)
+- REST API built with **ElysiaJS** (`/api/posts`)
+- Jitsu Cloud events:
+  - `PageViewed`
+  - `BlogPostCreated`
+  - `BlogPostViewed`
+  - `BlogPostDeleted`
+  - `AliasSet` (with `identify()`)
+- Automatic page view tracking with `@jitsu/jitsu-react`
+- Docker-based setup: one command to run frontend, backend, and database together
+- Portable to any Mac/PC/Linux host with Docker
 
+---
 
-## Prereqs
-- Node 18+ (for local dev) and Docker Engine (for container build/run)
-- A Jitsu project (Cloud or self-host). Grab the **Write Key**.
+## 🛠 Prerequisites
+- Node 18+ (for local dev) or Bun (for backend local dev)
+- Docker + Docker Compose
+- A [Jitsu Cloud](https://jitsu.com) project  
+  → Create a Website Source and copy its **Write Key**
 
+---
 
-## 1) Configure Jitsu
-Create `.env` from the example:
-```bash
-cp .env.example .env
-# set your Jitsu key and (optionally) host
+## ⚙️ Configuration
+1. Copy env example in frontend:
+   ```bash
+   cp frontend/.env.example frontend/.env
+2. Set variables in frontend/.env:
+    ```
+    VITE_API_BASE=/api
+    VITE_JITSU_HOST=https://t.jitsu.com
+    VITE_JITSU_WRITE_KEY=<your_write_key_from_jitsu_cloud>
+    ```
+- Backend env is provided through docker-compose.yml (Mongo URI, port, etc).
+
+---
+
+## ▶️ Run Locally (hot reload)
+### Frontend
 ```
-- **Cloud**: `VITE_JITSU_HOST=https://t.jitsu.com` (default) is fine.
-- **Self-host** (on your other Mac): use your collector/script base URL, e.g. `https://analytics.myhost.local`.
-
-
-## 2) Run locally (hot reload)
-```bash
-npm i
-npm run dev
+cd frontend
+pnpm i
+pnpm dev
 # open http://localhost:5173
 ```
-Create a couple posts, set an alias, click around—then watch the **Live Events** stream in Jitsu.
 
-
-## 3) Build and run in Docker
-```bash
-# Build image (env is read at *build* time by Vite)
-docker build -t jitsu-blog:latest .
-# Run container
-docker run -d --name jitsu-blog -p 8080:80 jitsu-blog:latest
-# open http://localhost:8080
+### Backend
 ```
-> If you change env values, rebuild the image so Vite can embed them.
-
-
-## 4) Deploy to another Mac (air-gapped friendly)
-On your dev machine:
-```bash
-# Save image to a tar
-docker save -o jitsu-blog.tar jitsu-blog:latest
+cd backend
+bun run dev
+# open http://localhost:3080/healthz
 ```
-Copy `jitsu-blog.tar` to the target Mac (Air M4), then:
-```bash
-docker load -i jitsu-blog.tar
-docker run -d --name jitsu-blog -p 8080:80 jitsu-blog:latest
+
+- Mongo will need to be running (e.g. docker run mongo:7).
+
+---
+
+## 🐳 Run with Docker Compose
+
+From the project root:
 ```
-Alternatively, push to a registry and `docker pull` on the target.
+docker compose build  
+docker compose up -d  
+```
+- Frontend → http://localhost:3060  
+- Backend (proxied via /api) → http://localhost:3060/api/healthz  
+- MongoDB exposed on port 27017 (for dev/debug)
 
+---
 
-## 5) Event Cheatsheet (what to expect in Jitsu)
-- `PageViewed` — fired in each route's `useEffect`
-- `BlogPostCreated` — on successful submit
-- `BlogPostViewed` — when opening a post
-- `BlogPostDeleted` — when deleting
-- `AliasSet` — when you enter an alias in the header (also calls `identify()`)
+## 🚀 Deploy to another machine
 
+On dev machine:
 
-## 6) Self-host Jitsu locally (optional)
-- Install Docker Desktop on the other Mac
-- Use the official `jitsucom/jitsu` compose or Cloud quickstart
-- Point `VITE_JITSU_HOST` to your collector domain
+```docker save -o jitsu-blog-poc.tar jitsu-blog-frontend jitsu-blog-backend blog-mongo  ```
 
+Copy `jitsu-blog-poc.tar` to the target machine, then:
+```
+docker load -i jitsu-blog-poc.tar  
+docker compose up -d  
+```
+Alternatively, push/pull from a container registry.
 
-## 7) Notes
-- Since data is in `localStorage`, posts are per-browser. Swap to a real backend later.
+---
+
+## 📊 Analytics Flow
+
+- User interacts with blog → frontend calls `analytics.track(...)` via `@jitsu/jitsu-react`  
+- Events sent to https://t.jitsu.com with your project write key  
+- Jitsu Cloud ingests and routes them to your **Provisioned ClickHouse** destination  
+- Inspect in **Live Events** or query via **SQL Console**
+
+---
+
+## 🧾 Event Cheatsheet
+
+- PageViewed → on route change  
+- BlogPostCreated → after submitting a post  
+- BlogPostViewed → when opening a post  
+- BlogPostDeleted → when deleting a post  
+- AliasSet → when alias is entered in header (identify())
+
+---
+
+## 🔮 Next Steps
+
+- Add auth & stitch anonymous → identified user journeys  
+- Try more events (e.g., AddToCart, Purchase) to simulate funnels  
+- Point Jitsu to a custom destination (Postgres, BigQuery, S3) for raw ownership of data  
+
+---
+
+<div align="center">
+  <img src="https://github.com/neahtSan.png" width="80" style="border-radius: 50%;" alt="neahtSan Logo"/>
+  <br>
+  <strong>Made with ❤️ by <a href="https://github.com/neahtSan">neahtSan</a></strong>
+</div>
