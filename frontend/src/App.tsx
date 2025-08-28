@@ -24,7 +24,7 @@ export default function App() {
         )}
         <Outlet />
       </main>
-      <footer className="footer">Jitsu Blog Demo • MIT</footer>
+      <footer className="footer">Blog Demo • MIT</footer>
     </div>
   );
 }
