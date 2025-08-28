@@ -1,0 +1,42 @@
+version: "3.9"
+
+services:
+  mongo:
+    image: mongo:7
+    container_name: blog-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: blog
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  backend:
+    build: ./backend
+    container_name: blog-backend
+    restart: unless-stopped
+    environment:
+      MONGO_URI: "mongodb://root:password@mongo:27017/blog?authSource=admin"
+      PORT: "3080"
+      CORS_ORIGIN: "*"
+    depends_on:
+      - mongo
+    ports:
+      - "3080:3080"
+
+  frontend:
+    build: ./frontend
+    container_name: blog-frontend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+    depends_on:
+      - backend
+    ports:
+      - "3060:80"
+
+volumes:
+  mongo_data:
