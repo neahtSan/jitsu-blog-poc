@@ -28,7 +28,9 @@ services:
       - "3080:3080"
 
   frontend:
-    build: ./frontend
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
     container_name: blog-frontend
     restart: unless-stopped
     environment:

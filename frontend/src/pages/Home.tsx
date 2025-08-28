@@ -41,7 +41,7 @@ export default function Home() {
       ) : (
         <div className="grid">
           {posts.map((p) => (
-            <PostCard key={p._id} post={p} />
+            <PostCard key={p.id} post={p} />
           ))}
         </div>
       )}
